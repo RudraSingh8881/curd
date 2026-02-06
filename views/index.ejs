@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h1>Rudra posts</h1>
+    <% for(post of posts) { %>
+    <div class="post">
+        <h2 class="user"><%=post.username %></h2>
+        <h4 class="content"><%=post.content %></h4>
+        <br/>
+            <a href="http://localhost:8080/posts/<%=post.id %>">see details</a>
+              <a href="http://localhost:8080/posts/<%=post.id %>/edit">edit content</a>
+              <form method="post"actio="/posts/<%=post.id%>?_method=DELETE">
+                <button>DELETE</button>
+              </form>
+    </div>
+    <%}%>
+    <br/><br/>
+    <a href="http://localhost:8080/posts/new">Create posts</a>
+</body>
+</html>
