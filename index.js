@@ -77,6 +77,14 @@ app.get('/posts/:id/edit',(req,res)=>{
       res.render("edit.ejs",{post});
 });
 
+
+//delete route
+app.delete('/posts/:id',(req,res)=>{
+    let {id}=req.params;    //id extract karte hai.
+    posts=posts.filter((p)=>p.id!==id);   //id choose karte hai hai kis id ko delete karna hai.
+    res.redirect("/posts");
+});
+
 app.listen(port,()=>{
     console.log("server running on port:8080");
 });
