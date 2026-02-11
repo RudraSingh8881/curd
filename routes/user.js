@@ -1,7 +1,10 @@
 const express=require('express');
 const router=express.Router();  //router likhne me error agya tha.
 const user=require("../models/user");
+const passport=require("passport");
 
+
+//signup route
 router.get("/signup",(req,res)=>{
     res.render("signup.ejs");;
 });
@@ -62,4 +65,21 @@ router.post("/signup", async (req,res)=>{
     }
 });
 
-module.exports=router;
+
+// LOGIN ROUTES
+router.get("/login", (req,res) => {
+    res.render("login.ejs");
+});
+
+router.post("/login", passport.authenticate("local", {
+    failureRedirect: "/login",
+    failureFlash: true
+}), (req, res) => {
+    console.log("POST /login successful");
+    req.flash("success", "Welcome back!");
+    res.redirect("/posts");
+});
+
+ 
+
+module.exports = router;

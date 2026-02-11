@@ -62,6 +62,30 @@ app.use((req,res,next)=>{
 app.use(passport.initialize());
 app.use(passport.session());
 
+// LocalStrategy for passport
+const bcrypt = require('bcryptjs');
+
+passport.use(new LocalStrategy({
+    usernameField: 'username',
+    passwordField: 'password'
+}, async (username, password, done) => {
+    try {
+        const foundUser = await user.findOne({username});
+        if(!foundUser) {
+            return done(null, false, {message: "User not found"});
+        }
+        
+        const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
+        if(!isPasswordMatch) {
+            return done(null, false, {message: "Invalid password"});
+        }
+        
+        return done(null, foundUser);
+    } catch(err) {
+        return done(err);
+    }
+}));
+
 // Custom serialize/deserialize (without passport-local-mongoose)
 passport.serializeUser((user, done) => {
     done(null, user.id);
@@ -69,8 +93,8 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
     try {
-        const user = await require('./models/user').findById(id);
-        done(null, user);
+        const foundUser = await user.findById(id);
+        done(null, foundUser);
     } catch(err) {
         done(err);
     }
@@ -80,6 +104,12 @@ passport.deserializeUser(async (id, done) => {
 // ===== ROUTES (SABSE LAST) =====
 const userRouter=require("./routes/user");
 app.use("/",userRouter);
+
+// Test route
+app.get("/test-login", (req, res) => {
+    res.render("login.ejs");
+});
+
 
 
 //demoUser
