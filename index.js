@@ -12,6 +12,13 @@ app.set('view engine','ejs');
 app.set('views',path.join(__dirname,'views'));
 app.use(express.static(path.join(__dirname,'public')));
 
+const passport=require("passport");
+const LocalStrategy=require("passport-local");
+const user=require("./models/user");       //user page ko require kiye hai.
+const session = require("express-session");
+
+const flash =require("connect-flash");
+const mongoose = require("mongoose");//mongoose require.
 
 //variable type ka database banana hai jisese ki user essily delete ker sake yaha per post noun hai.
 
@@ -31,6 +38,61 @@ let posts=[
 //app.get('/',(req,res)=>{
  //   res.send("Hello world");
 //});
+
+app.use(session({              //session hamesa ek individual user ka hai.
+    secret: "mysupersecretkey",
+    resave: false,
+    saveUninitialized: false
+}));     
+         
+//flash 
+app.use(flash());
+
+
+// global variables for ejs
+app.use((req,res,next)=>{
+    res.locals.success=req.flash("success");
+    res.locals.error=req.flash("error");
+    res.locals.currentUser=req.user;
+    next();
+});
+
+
+//ye sare passport se related hai.
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Custom serialize/deserialize (without passport-local-mongoose)
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await require('./models/user').findById(id);
+        done(null, user);
+    } catch(err) {
+        done(err);
+    }
+});
+
+
+// ===== ROUTES (SABSE LAST) =====
+const userRouter=require("./routes/user");
+app.use("/",userRouter);
+
+
+//demoUser
+//app.get('/demoUser',async(req,res)=>{
+  //  let fakeUser=new user({
+       // email:"student@gmail.com",
+      //  username:"rudra"
+    //});
+    //let registeredUser=await user.register(fakeUser,"hello123");//register check automatical ki unique hai ya nahi.
+  // res.send(registeredUser);
+//});
+
+
 
 //home path
 app.get('/posts',(req,res)=>{
@@ -88,3 +150,15 @@ app.delete('/posts/:id',(req,res)=>{
 app.listen(port,()=>{
     console.log("server running on port:8080");
 });
+
+
+//simple way under standing for mongodb conection.
+const MONGO_URL = "mongodb+srv://prataprudrapratap07_db_user:CpA9amcrVI2bZZxD@cluster0.2up1kr4.mongodb.net/curd?retryWrites=true&w=majority";
+
+async function main() {
+  await mongoose.connect(MONGO_URL);
+}
+
+main()
+  .then(() => console.log("Connected to MongoDB Atlas"))
+  .catch((err) => console.log(err));
