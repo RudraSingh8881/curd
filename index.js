@@ -14,11 +14,11 @@ app.use(express.static(path.join(__dirname,'public')));
 
 const passport=require("passport");
 const LocalStrategy=require("passport-local");
-const user=require("./models/user");       //user page ko require kiye hai.
-const session = require("express-session");
-
-const flash =require("connect-flash");
-const mongoose = require("mongoose");//mongoose require.
+const bcrypt=require('bcryptjs');
+const user=require("./models/user");
+const session=require("express-session");
+const flash=require("connect-flash");
+const mongoose=require("mongoose");
 
 //variable type ka database banana hai jisese ki user essily delete ker sake yaha per post noun hai.
 
@@ -58,46 +58,27 @@ app.use((req,res,next)=>{
 });
 
 
-//ye sare passport se related hai.
+// Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
-// LocalStrategy for passport
-const bcrypt = require('bcryptjs');
-
-passport.use(new LocalStrategy({
-    usernameField: 'username',
-    passwordField: 'password'
-}, async (username, password, done) => {
+// Passport LocalStrategy
+passport.use(new LocalStrategy(async (username, password, done) => {
     try {
         const foundUser = await user.findOne({username});
-        if(!foundUser) {
-            return done(null, false, {message: "User not found"});
-        }
+        if(!foundUser) return done(null, false);
         
-        const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
-        if(!isPasswordMatch) {
-            return done(null, false, {message: "Invalid password"});
-        }
-        
-        return done(null, foundUser);
-    } catch(err) {
-        return done(err);
-    }
-}));
-
-// Custom serialize/deserialize (without passport-local-mongoose)
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-    try {
-        const foundUser = await user.findById(id);
-        done(null, foundUser);
+        const isMatch = await bcrypt.compare(password, foundUser.password);
+        return isMatch ? done(null, foundUser) : done(null, false);
     } catch(err) {
         done(err);
     }
+}));
+
+// Serialize/Deserialize user
+passport.serializeUser((u, done) => done(null, u._id));
+passport.deserializeUser((id, done) => {
+    user.findById(id).then(u => done(null, u)).catch(err => done(err));
 });
 
 

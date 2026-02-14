@@ -1,65 +1,44 @@
 const express=require('express');
-const router=express.Router();  //router likhne me error agya tha.
+const router=express.Router();
 const user=require("../models/user");
 const passport=require("passport");
+const bcrypt=require('bcryptjs');
 
 
 //signup route
-router.get("/signup",(req,res)=>{
-    res.render("signup.ejs");;
+router.get("/signup", (req,res)=>{
+    res.render("signup.ejs");
 });
 
-const bcrypt = require('bcryptjs');
-
 router.post("/signup", async (req,res)=>{
-    const {username,email,password}=req.body;
-    
-    if(!username || !email || !password) {
-        req.flash("error","All fields are required!");
-        return res.redirect("/signup");
-    }
-    
     try {
-        console.log("Received signup data:", {username, email, password});
+        const {username, email, password} = req.body;
         
-        // Check if user already exists
-        const existingUser = await user.findOne({username});
-        if(existingUser) {
-            console.log(" Username already exists");
+        if(!username || !email || !password) {
+            req.flash("error", "All fields are required!");
+            return res.redirect("/signup");
+        }
+        
+        if(await user.findOne({username})) {
             req.flash("error", "Username already exists!");
             return res.redirect("/signup");
         }
         
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        
-        // Create new user with hashed password
-        const newUser = new user({
+        const newUser = await new user({
             email, 
-            username,
-            password: hashedPassword
-        });
+            username, 
+            password: await bcrypt.hash(password, 10)
+        }).save();
         
-        const savedUser = await newUser.save();
-        console.log(" User saved to MongoDB:", savedUser.username);
-        console.log("Email:", savedUser.email);
-        
-        // Store user in session
-        req.login(savedUser, {}, (err) => {
+        req.login(newUser, err => {
             if(err) {
-                console.log(" Login error:", err.message);
                 req.flash("error", "Login failed");
                 return res.redirect("/signup");
             }
-            console.log(" User logged in successfully");
-            req.flash("success","Welcome to our website!");
+            req.flash("success", "Welcome to our website!");
             res.redirect("/posts");
         });
-        
-    } catch(e){
-        console.log(" Error:", e.message);
-        console.log("Error Stack:", e.stack);
+    } catch(e) {
         req.flash("error", e.message);
         res.redirect("/signup");
     }
