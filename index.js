@@ -105,8 +105,8 @@ passport.deserializeUser(async (id, done) => {
 const userRouter=require("./routes/user");
 app.use("/",userRouter);
 
-// Test route
-app.get("/test-login", (req, res) => {
+// login route
+app.get("/login", (req, res) => {
     res.render("login.ejs");
 });
 

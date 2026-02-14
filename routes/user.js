@@ -71,11 +71,10 @@ router.get("/login", (req,res) => {
     res.render("login.ejs");
 });
 
-router.post("/login", passport.authenticate("local", {
+router.post("/login", passport.authenticate("local", { //passport authentication middeleware hai.
     failureRedirect: "/login",
     failureFlash: true
 }), (req, res) => {
-    console.log("POST /login successful");
     req.flash("success", "Welcome back!");
     res.redirect("/posts");
 });
