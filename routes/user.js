@@ -1,85 +1,50 @@
-const express=require('express');
-const router=express.Router();  //router likhne me error agya tha.
-const user=require("../models/user");
-const passport=require("passport");
+const express = require("express");
+const router = express.Router();
+const User = require("../models/user");
+const passport = require("passport");
+const bcrypt = require("bcryptjs");
 
 
-//signup route
-router.get("/signup",(req,res)=>{
-    res.render("signup.ejs");;
+// signup page
+router.get("/signup", (req, res) => {
+    res.render("signup.ejs");
 });
 
-const bcrypt = require('bcryptjs');
 
-router.post("/signup", async (req,res)=>{
-    const {username,email,password}=req.body;
-    
-    if(!username || !email || !password) {
-        req.flash("error","All fields are required!");
+
+router.post("/signup", async (req, res) => {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password)
         return res.redirect("/signup");
-    }
-    
-    try {
-        console.log("Received signup data:", {username, email, password});
-        
-        // Check if user already exists
-        const existingUser = await user.findOne({username});
-        if(existingUser) {
-            console.log(" Username already exists");
-            req.flash("error", "Username already exists!");
-            return res.redirect("/signup");
-        }
-        
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        
-        // Create new user with hashed password
-        const newUser = new user({
-            email, 
-            username,
-            password: hashedPassword
-        });
-        
-        const savedUser = await newUser.save();
-        console.log(" User saved to MongoDB:", savedUser.username);
-        console.log("Email:", savedUser.email);
-        
-        // Store user in session
-        req.login(savedUser, {}, (err) => {
-            if(err) {
-                console.log(" Login error:", err.message);
-                req.flash("error", "Login failed");
-                return res.redirect("/signup");
-            }
-            console.log(" User logged in successfully");
-            req.flash("success","Welcome to our website!");
-            res.redirect("/posts");
-        });
-        
-    } catch(e){
-        console.log(" Error:", e.message);
-        console.log("Error Stack:", e.stack);
-        req.flash("error", e.message);
-        res.redirect("/signup");
-    }
+
+    if (await User.findOne({ username }))
+        return res.redirect("/signup");
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+        username,
+        email,
+        password: hash
+    });
+
+    req.login(user, () => res.redirect("/posts"));
 });
 
 
-// LOGIN ROUTES
-router.get("/login", (req,res) => {
+// login page
+router.get("/login", (req, res) => {
     res.render("login.ejs");
 });
 
-router.post("/login", passport.authenticate("local", {
-    failureRedirect: "/login",
-    failureFlash: true
-}), (req, res) => {
-    console.log("POST /login successful");
-    req.flash("success", "Welcome back!");
-    res.redirect("/posts");
-});
 
- 
+// login
+router.post("/login",
+    passport.authenticate("local", {
+        successRedirect: "/posts",
+        failureRedirect: "/login"
+    })
+);
 
 module.exports = router;

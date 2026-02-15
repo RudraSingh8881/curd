@@ -13,13 +13,13 @@ app.set('views',path.join(__dirname,'views'));
 app.use(express.static(path.join(__dirname,'public')));
 
 const passport=require("passport");
-const LocalStrategy=require("passport-local");
-const user=require("./models/user");       //user page ko require kiye hai.
-const session = require("express-session");
+const LocalStrategy=require("passport-local").Strategy;//ye ek object return karta hai.
+const User=require("./models/user");       //user page ko require kiye hai.
+const session = require("express-session");//ye server ko batata hai ki ye same user hai jo abhi login karke gaya tha.
 
-const flash =require("connect-flash");
+const flash =require("connect-flash");//ye sirf temperory message show karata hai.jaise ki koi galat password dal de ya fir wrong activity kare to vahi show karta hai.
 const mongoose = require("mongoose");//mongoose require.
-
+const bcrypt = require('bcryptjs');//jo hamara password hai secure rahata hai dot ke form me ya fir star ke form me show karta hai.
 //variable type ka database banana hai jisese ki user essily delete ker sake yaha per post noun hai.
 
 let posts=[
@@ -48,6 +48,10 @@ app.use(session({              //session hamesa ek individual user ka hai.
 //flash 
 app.use(flash());
 
+//ye sare passport se related hai.
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 // global variables for ejs
 app.use((req,res,next)=>{
@@ -58,46 +62,30 @@ app.use((req,res,next)=>{
 });
 
 
-//ye sare passport se related hai.
-app.use(passport.initialize());
-app.use(passport.session());
-
-// LocalStrategy for passport
-const bcrypt = require('bcryptjs');
-
-passport.use(new LocalStrategy({
-    usernameField: 'username',
-    passwordField: 'password'
-}, async (username, password, done) => {
+//local strategy
+passport.use(new LocalStrategy(async (username, password, done) => {
     try {
-        const foundUser = await user.findOne({username});
-        if(!foundUser) {
-            return done(null, false, {message: "User not found"});
-        }
-        
-        const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
-        if(!isPasswordMatch) {
-            return done(null, false, {message: "Invalid password"});
-        }
-        
+        const foundUser = await User.findOne({ username });
+
+        if (!foundUser) return done(null, false);
+
+        const ok = await bcrypt.compare(password, foundUser.password);
+        if (!ok) return done(null, false);
+
         return done(null, foundUser);
-    } catch(err) {
+
+    } catch (err) {
         return done(err);
     }
 }));
 
+
 // Custom serialize/deserialize (without passport-local-mongoose)
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
+passport.serializeUser((user, done) => done(null, user._id));
 
 passport.deserializeUser(async (id, done) => {
-    try {
-        const foundUser = await user.findById(id);
-        done(null, foundUser);
-    } catch(err) {
-        done(err);
-    }
+    const user = await User.findById(id);
+    done(null, user);
 });
 
 
@@ -106,7 +94,7 @@ const userRouter=require("./routes/user");
 app.use("/",userRouter);
 
 // Test route
-app.get("/test-login", (req, res) => {
+app.get("/login", (req, res) => {
     res.render("login.ejs");
 });
 
@@ -185,10 +173,16 @@ app.listen(port,()=>{
 //simple way under standing for mongodb conection.
 const MONGO_URL = "mongodb+srv://prataprudrapratap07_db_user:CpA9amcrVI2bZZxD@cluster0.2up1kr4.mongodb.net/curd?retryWrites=true&w=majority";
 
+
+
 async function main() {
-  await mongoose.connect(MONGO_URL);
+  try {
+    await mongoose.connect(MONGO_URL);
+    console.log("MongoDB Connected Successfully ");
+  } catch (err) {
+    console.log("MongoDB Connection Error ");
+    console.log(err);
+  }
 }
 
-main()
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch((err) => console.log(err));
+main();
