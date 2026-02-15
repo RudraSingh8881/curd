@@ -13,6 +13,7 @@ app.set('views',path.join(__dirname,'views'));
 app.use(express.static(path.join(__dirname,'public')));
 
 const passport=require("passport");
+<<<<<<< HEAD
 const LocalStrategy=require("passport-local").Strategy;//ye ek object return karta hai.
 const User=require("./models/user");       //user page ko require kiye hai.
 const session = require("express-session");//ye server ko batata hai ki ye same user hai jo abhi login karke gaya tha.
@@ -20,6 +21,15 @@ const session = require("express-session");//ye server ko batata hai ki ye same 
 const flash =require("connect-flash");//ye sirf temperory message show karata hai.jaise ki koi galat password dal de ya fir wrong activity kare to vahi show karta hai.
 const mongoose = require("mongoose");//mongoose require.
 const bcrypt = require('bcryptjs');//jo hamara password hai secure rahata hai dot ke form me ya fir star ke form me show karta hai.
+=======
+const LocalStrategy=require("passport-local");
+const bcrypt=require('bcryptjs');
+const user=require("./models/user");
+const session=require("express-session");
+const flash=require("connect-flash");
+const mongoose=require("mongoose");
+
+>>>>>>> 6b210237e5adf56ad3db6bb3d6be84d23ccb2915
 //variable type ka database banana hai jisese ki user essily delete ker sake yaha per post noun hai.
 
 let posts=[
@@ -62,6 +72,7 @@ app.use((req,res,next)=>{
 });
 
 
+<<<<<<< HEAD
 //local strategy
 passport.use(new LocalStrategy(async (username, password, done) => {
     try {
@@ -86,6 +97,29 @@ passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser(async (id, done) => {
     const user = await User.findById(id);
     done(null, user);
+=======
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport LocalStrategy
+passport.use(new LocalStrategy(async (username, password, done) => {
+    try {
+        const foundUser = await user.findOne({username});
+        if(!foundUser) return done(null, false);
+        
+        const isMatch = await bcrypt.compare(password, foundUser.password);
+        return isMatch ? done(null, foundUser) : done(null, false);
+    } catch(err) {
+        done(err);
+    }
+}));
+
+// Serialize/Deserialize user
+passport.serializeUser((u, done) => done(null, u._id));
+passport.deserializeUser((id, done) => {
+    user.findById(id).then(u => done(null, u)).catch(err => done(err));
+>>>>>>> 6b210237e5adf56ad3db6bb3d6be84d23ccb2915
 });
 
 
@@ -93,7 +127,11 @@ passport.deserializeUser(async (id, done) => {
 const userRouter=require("./routes/user");
 app.use("/",userRouter);
 
+<<<<<<< HEAD
 // Test route
+=======
+// login route
+>>>>>>> 6b210237e5adf56ad3db6bb3d6be84d23ccb2915
 app.get("/login", (req, res) => {
     res.render("login.ejs");
 });
